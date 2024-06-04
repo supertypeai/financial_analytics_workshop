@@ -1,0 +1,185 @@
+---
+title: "Financial Workshop"
+author: "Gerald"
+date: "2024-05-17"
+output: html_document
+---
+
+```{r}
+source("function.R")
+```
+
+# Value Investing Analysis
+
+Searching stocks which price is still undervalued compared to their financial metrics (or ratio). In this analysis we will use PE Ratio and PBV Ratio to analyze if the stocks is undervalued or not.
+
+## PE
+The price-to-earnings (P/E) ratio is a metric that evaluates a company's stock price in relation to its earnings per share (EPS). This ratio is crucial for determining the value of a company's stock, as it allows for comparisons of a company's valuation over time, with other companies in the same industry, or with the broader market.
+
+**Example:** A P/E ratio of 15 means that the company’s current market value equals 15 times its annual earnings.
+
+## PBV Ratio
+The price-to-book ratio (P/B ratio) of a company is calculated by dividing its current stock price per share by its book value per share (BVPS). This ratio provides insight into how the market values the company relative to its book value.
+
+**Example:** A P/B ratio of 1 means that the stock price is trading in line with the book value of the company. In other words, the stock price would be considered fairly valued, strictly from a P/B standpoint.
+
+## Analysis
+
+### Data Fetching & Processing
+
+First, we will fetch the data from [Sector's API](https://sectors.app/api).
+
+```{r}
+# Read data using API
+df_finance <- fetch_company_valuation_data(c("BBCA.JK", "BBRI.JK", "BMRI.JK", "MEGA.JK", "BRIS.JK", "NISP.JK", "BNGA.JK", "BBNI.JK"))
+
+# Read Data from csv file
+df_finance <- read.csv("../data/pe_pb_top_bank.csv")
+
+# Data Cleansing
+df_finance_clean <- finance_data_cleansing(df_finance)
+```
+
+### Data Visualization
+
+In the introduction section of this Value Investing trading strategy, we have known what is PE and PBV ratio, how to interpret it, and how to use it in analysis. Since, both the metrics need to be compared to their historical values for each company, and comparison between companies in their respective sector for each year to determine if the value of a company in specific year and the value of a company in their industry is undervalued or not. We will create a visualization plot to make it easier to do the anlysis and gain insight for your investing activities
+
+```{r}
+# Historical value of PE/PBV ratio of BBCA.JK comparison
+df_bbca <- df_finance_clean %>% 
+  filter(symbol == "BBCA.JK")
+
+ggplot(df_bbca, aes(x = pe, y=pb, color=as.factor(year)))+
+  geom_point(size=10)+
+  geom_text(aes(label=as.factor(year)),vjust=3)+
+  labs(x="PE Ratio",y="PBV ratio")+
+  ggtitle("PE and PBV Ratio Comparison of BBCA.JK Over the Years") +
+  custom_theme+
+  theme(legend.position = "None")
+```
+From the plot above we can see that in 2023, BBCA.JK is quite undervalued based on the PE ratio from the last 4 years data. However, in terms of PBV ratio, it has a high PBV ratio value in the last 4 years. Since, it is still hard to determine whether BBCA.JK is undervalued or overvalued based on their historical PE and PBV ratio value, we will try to compared the BBCA.JK value to the other company in bank industry and also to the average PE and PBV value.
+
+```{r}
+df_bank_2023 <- df_finance_clean %>% 
+  filter(year == 2023)
+
+ggplot(df_bank_2023, aes(x= pe,y=pb, color=symbol)) +
+  geom_point(alpha = 0.7,size=12,show.legend = FALSE) +
+  geom_segment(data = df_finance_clean %>% filter(symbol == "Banks (Sectors Average)") %>% filter (year == 2023),aes(x = pe, y = 0, xend = pe, yend = pb), linetype = "dashed",size=1.5) +
+  geom_segment(data = df_finance_clean %>% filter(symbol == "Banks (Sectors Average)") %>% filter (year == 2023),aes(x = 0, y = pb, xend = pe, yend = pb), linetype = "dashed",size=1.5) +
+  geom_text(aes(label = symbol), vjust = 1,size=8)+
+  labs(x = "Price to Earning Ratio", y = "Price to Book Value Ratio")+
+  ggtitle("Financial Ratio Comparisons of Top 8 Major Companies in Bank Sector in 2023") +
+  custom_theme +
+  theme(legend.position = "none")
+```
+From this plot, we can see that BBCA.JK value is overvalued if it compared to the other companies in Bank industry. It has the highest PE and PBV ratio values by miles. Therefore, it can be something we take note when we want to use the value investing strategy.
+
+Not only stop until this part, we can also combine those two plots above into one animation plot. With this plot we can see each companies PBV and PE ratio value over the years and how it compared to the other companies and the sectors average.
+
+```{r}
+# Plot comparison between companies and over the years
+animation_plot <- ggplot(df_finance_clean, aes(x= pe,y=pb, color=symbol)) +
+  geom_point(alpha = 0.7,size=12,show.legend = FALSE) +
+  geom_segment(data = df_finance_clean %>% filter(symbol == "Banks (Sectors Average)"),aes(x = pe, y = 0, xend = pe, yend = pb), linetype = "dashed",size=1.5) +
+  geom_segment(data = df_finance_clean %>% filter(symbol == "Banks (Sectors Average)"),aes(x = 0, y = pb, xend = pe, yend = pb), linetype = "dashed",size=1.5) +
+  geom_text(aes(label = symbol), vjust = 1,size=8)+
+  labs(x = "Price to Earning Ratio", y = "Price to Book Value Ratio")+
+  ggtitle("Financial Ratio Comparisons of Top 8 Major Companies in Bank Sector") +
+  custom_theme +
+  theme(legend.position = "none")
+
+animation_plot
+```
+```{r}
+# Make the plot animation transition (use transation_time)
+anim <- animation_plot + transition_time(year) +
+  labs(subtitle = "Year: {frame_time}")
+
+anim
+```
+
+```{r}
+# Save the animation plot to .gif file
+animate(anim, 200, fps = 8, width = 1200, height = 1000,
+        renderer = gifski_renderer("bank_pe_pbv.gif"))
+```
+
+# Dividend Investing Strategy
+
+Let's grasp the concept of dividends. Dividends are profits that a company distributes to its shareholders, indicating financial stability and maturity. Unlike growth-oriented firms that reinvest earnings, dividend-paying companies offer shareholders a portion of their profits. For investors, dividends offer a reliable source of passive income, particularly appealing to those seeking consistent cash flow from investments.
+
+The key advantage of dividend growth investing lies in its ability to provide a growing stream of passive income over time. As companies continue to raise dividends, investors benefit from an increasing income stream, particularly valuable for those aiming to supplement income or build a retirement nest egg.
+
+Moreover, this strategy is viewed as a conservative approach compared to others. By targeting companies with a history of stable dividend growth, investors can potentially reduce exposure to market volatility while benefiting from equities' long-term growth potential. Patience and discipline are vital, as the compounding effects of dividend growth may take time to materialize.
+ 
+## Data Fetching & Processing
+```{r}
+# Read data using API
+df_dividend <- fetch_company_dividend_data(c("BBCA.JK", "BBRI.JK","BYAN.JK","BMRI.JK", "TLKM.JK", "ASII.JK","BBNI.JK"))
+
+# Read Data from csv file
+df_dividend <- read.csv("../data/total_dividend.csv")
+
+# Data Cleansing
+df_dividend_clean <- dividend_data_cleansing(df_dividend)
+```
+
+## Data Visualization
+
+One of the important aspects of the dividend investing strategy is that there is a stable growth of the dividend payout. The growth will ensure that the investor get a steadily increasing income stream. Moreover, it also indicate the company is financially healthy and has a sustainable business model, since the stable growth indicates the management's confidence in the company's future earnings and cash flow. Therefore, in the plot below we will create the historical dividend growth of each companies.
+
+```{r}
+dividend_plot <- ggplot(df_dividend_clean,aes(x=year,y=percentage_growth,color=symbol))+
+  geom_line()+
+  theme(legend.position = "top")+
+  labs(x="year",y="Dividend Percentage growth")+
+  ggtitle("Dividend Growth of 7 Major Companies in Indonesia Over Time")+
+  custom_theme
+
+dividend_plot
+```
+
+From the plot, we can see that most of the major companies in Indonesia has similar dividend growth patterns, however there is one company that maintain a positive dividend growth over the year which is ASII.JK. Using the plot above we can also create the animation plot using the code below. Additionally, we can also analyze the other company by changing the list of the stocks we fill in in above to apply this strategy, since my hypothesis said that there are companies outside this 7 major companies that have a more stable dividend growth
+
+```{r}
+# Make animation plot
+anim <- dividend_plot + 
+  geom_point(size=6) +
+  geom_text(aes(label=symbol), hjust=-0.1, size=8)+
+  transition_reveal(year)
+```
+
+```{r}
+# Save animation plot as .gif file
+animate(anim, 200, fps = 8, width = 1400, height = 1000,
+        renderer = gifski_renderer("dividend_growth.gif"))
+```
+
+## Fetch top dividend company directly from the API
+Sectors's also provide an API to fetch the top companies based on the dividend yield for each year. We can directly fetch thos data and see which companies have the highest dividend yield in each year.
+
+```{r}
+# Fetch top company directly through an API endpoints
+
+df_comp_div <- data.frame()
+
+for (year in c(2021,2022,2023)){
+  url <- paste0("https://api.sectors.app/v1/companies/top/?year=",year,"&classifications=dividend_yield&n_stock=5")
+  
+  headers <- c(Authorization = api_key)
+  
+  response <- GET(url, add_headers(headers))
+  
+  df_comp <- fromJSON(content(response, "text", encoding="utf-8"),flatten=TRUE)
+  
+  df_comp <- df_comp$dividend_yield
+  
+  df_comp$year <- year
+  
+  df_comp_div <- rbind(df_comp_div,df_comp)
+}
+
+df_comp_div
+```
+

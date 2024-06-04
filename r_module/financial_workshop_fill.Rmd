@@ -1,0 +1,116 @@
+---
+title: "Financial Workshop"
+author: "Gerald"
+date: "2024-05-17"
+output: html_document
+---
+
+```{r}
+source("function.R")
+```
+
+# Value Investing Analysis
+
+### Data Fetching & Processing
+
+```{r}
+# Read data using API
+
+```
+
+```{r}
+# Read Data from csv file
+df_finance <- read.csv("../data/pe_pb_top_bank.csv")
+```
+
+```{r}
+# Data Cleansing
+
+```
+
+### Data Visualization
+
+```{r}
+# Historical value of PE/PBV ratio of BBCA.JK comparison
+
+```
+
+```{r}
+df_bank_2023 <- df_finance_clean %>% 
+  filter(year == 2023)
+
+ggplot(df_bank_2023, aes(x= pe,y=pb, color=symbol)) +
+  geom_point(alpha = 0.7,size=12,show.legend = FALSE) +
+  geom_segment(data = df_finance_clean %>% filter(symbol == "Banks (Sectors Average)") %>% filter (year == 2023),aes(x = pe, y = 0, xend = pe, yend = pb), linetype = "dashed",size=1.5) +
+  geom_segment(data = df_finance_clean %>% filter(symbol == "Banks (Sectors Average)") %>% filter (year == 2023),aes(x = 0, y = pb, xend = pe, yend = pb), linetype = "dashed",size=1.5) +
+  geom_text(aes(label = symbol), vjust = 1,size=8)+
+  labs(x = "Price to Earning Ratio", y = "Price to Book Value Ratio")+
+  ggtitle("Financial Ratio Comparisons of Top 8 Major Companies in Bank Sector in 2023") +
+  custom_theme +
+  theme(legend.position = "none")
+```
+
+```{r}
+# Plot comparison between companies and over the years
+
+```
+
+```{r}
+# Make the plot animation transition (use transation_time)
+anim <- animation_plot + transition_time(year) +
+  labs(subtitle = "Year: {frame_time}")
+
+anim
+```
+
+```{r}
+# Save the animation plot to .gif file
+animate(anim, 200, fps = 8, width = 1200, height = 1000,
+        renderer = gifski_renderer("bank_pe_pbv.gif"))
+```
+
+# Dividend Investing Strategy
+
+## Data Fetching & Processing
+```{r}
+# Read data using API
+
+```
+
+```{r}
+# Read Data from csv file
+df_dividend <- read.csv("../data/total_dividend.csv")
+```
+
+```{r}
+# Data Cleansing
+
+```
+
+## Data Visualization
+
+```{r}
+# Line Plot Dividend
+
+```
+
+```{r}
+# Make animation plot
+anim <- dividend_plot + 
+  geom_point(size=6) +
+  geom_text(aes(label=symbol), hjust=-0.1, size=8)+
+  transition_reveal(year)
+```
+
+```{r}
+# Save animation plot as .gif file
+animate(anim, 200, fps = 8, width = 1400, height = 1000,
+        renderer = gifski_renderer("dividend_growth.gif"))
+```
+
+## Fetch top dividend company directly from the API
+```{r}
+# Fetch top company directly through an API endpoints
+
+```
+

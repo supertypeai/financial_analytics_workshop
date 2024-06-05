@@ -8,7 +8,9 @@ library(gganimate)
 library(scales)
 library(tidyr)
 
-api_key <- "YOUR API KEY"
+# Read API key
+readRenviron(".env")
+api_key = Sys.getenv("api_key")
 
 # Import Custom Theme
 custom_theme <- theme(

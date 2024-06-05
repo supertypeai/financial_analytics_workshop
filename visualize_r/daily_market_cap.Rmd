@@ -1,0 +1,131 @@
+---
+title: "company_market_cap"
+author: "Samuel"
+date: "2024-06-04"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(httr)
+# assumes you have a 
+readRenviron("../.env")
+sectors_api_key = Sys.getenv("SECTORS_API_KEY")
+```
+
+
+```{r}
+headers <- add_headers(Authorization=sectors_api_key)
+stock <- "BREN"
+url <- paste0("https://api.sectors.app/v1/daily/",stock,"/?start=2024-04-01&end=2024-05-31")
+
+bren <- RETRY(
+    "GET",
+    url,
+    headers,
+    times = 3 # max 3 retry attempts
+    ) |> 
+    content("text", encoding="utf-8") |>
+    jsonlite::fromJSON(flatten = TRUE)
+head(bren)
+```
+
+
+```{r}
+get_daily_data <- function(stocks, df){
+
+  for(stock in stocks){
+    
+    url <- paste0("https://api.sectors.app/v1/daily/",stock,"/?start=2024-04-01&end=2024-05-31")
+
+    partial <- GET(url, headers) |> 
+    content("text", encoding="utf-8") |>
+    jsonlite::fromJSON(flatten = TRUE)  
+    
+    df <- rbind(df, partial)
+  }
+  return(df)
+}
+
+df <- data.frame()
+full <- get_daily_data(list("BBCA", "BBRI", "BREN"), df)
+str(full)
+```
+
+```{r}
+ggplot(
+  full,
+  aes(x=date, y=market_cap, group=symbol, color=symbol)
+  ) +
+  geom_line(linewidth=1) +
+  labs(x = "Date", 
+       y = "Market Capitalization", 
+       title="BREN vs BBCA vs BBRI",
+       subtitle = "BREN briefly overtaking BBCA as the most valuable company on IDX"
+       ) +
+  scale_y_continuous(
+    labels = scales::label_number(scale_cut = scales::cut_short_scale(), suffix=" IDR")
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), 
+        legend.position = "bottom",
+        legend.justification = "left", 
+        legend.text = element_text(color="#fb7185"),
+        plot.background = element_rect(fill="black"),
+        plot.title = element_text(color="#f43f5e", size=16),
+        plot.subtitle=element_text(color="#fb7185"),
+        plot.margin = unit(c(1,1.4,1,1.2), "cm")
+        ) 
+```
+
+
+
+```{r}
+headers <- add_headers(Authorization=sectors_api_key)
+
+df_daily <- data.frame()
+
+for (i in c("BBCA","BREN", "TPIA")){
+  url <- paste0("https://api.sectors.app/v1/daily/",i,"/?start=2024-04-01&end=2024-05-31")
+  response <- httr::GET(url, headers)
+  
+  if (httr::status_code(response) == 200) {
+      df <- jsonlite::fromJSON(httr::content(response, "text", encoding = "utf-8"),flatten=TRUE)
+      df_daily <- rbind(df_daily,df)
+    } else {
+      # Handle error
+      cat("Error:", httr::status_code(response), "\n")
+      next
+    }
+}
+```
+
+```{r}
+tail(df_daily)
+```
+
+```{r}
+library(hrbrthemes)
+```
+
+
+```{r}
+ggplot(
+  df_daily,
+  aes(x=date, y=market_cap, group=symbol, color=symbol)
+  ) +
+  geom_line(linewidth=1) +
+  labs(x = "Date", 
+       y = "Market Capitalization", 
+       title="BREN vs BBCA vs TPIA",
+       subtitle = "BREN overtaking BBCA as the most valuable company on IDX"
+       ) +
+  scale_y_continuous(
+    labels = scales::label_number(scale_cut = scales::cut_short_scale(), suffix=" IDR")
+  ) +
+  theme_ft_rc() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), 
+        legend.position = "bottom",
+        legend.justification = "left") 
+```
+

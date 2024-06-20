@@ -24,6 +24,7 @@ def retrieve_from_endpoint(url:str):
 def retrieve_sectors_data():
   url = "https://api.sectors.app/v1/subsectors/"
   sectors_list = retrieve_from_endpoint(url)
+  sectors_list = [item['subsector'] for item in sectors_list]
 
   # Sort sectors_list
   sectors_list.sort()

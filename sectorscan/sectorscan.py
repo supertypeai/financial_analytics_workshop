@@ -24,6 +24,7 @@ def retrieve_from_endpoint(url:str):
 def retrieve_sectors_data():
   url = "https://api.sectors.app/v1/subsectors/"
   sectors_list = retrieve_from_endpoint(url)
+  sectors_list = [item['subsector'] for item in sectors_list]
 
   # Sort sectors_list
   sectors_list.sort()
@@ -326,7 +327,7 @@ def top_companies_charts(options):
 
 
 # Title
-
+st.title("SectorScan")
 
 # Get sectors data
 sectors_list = retrieve_sectors_data()
@@ -360,10 +361,14 @@ else:
     )
 
     # First column
-        
+    with col1:
+       st.altair_chart(total_mc_chart)
+
+    with col2:
+        st.altair_chart(historical_mc_chart)
 
     # Second column
-        
+    st.altair_chart(change_mc_chart) 
 
     # Second row visualization
 
@@ -382,6 +387,7 @@ else:
     # Visualization
     valuation_chart = valuation_chart(options, selected_metric)
 
+    st.altair_chart(valuation_chart)
     
 
     # Top Companies Section
